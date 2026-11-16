@@ -172,16 +172,19 @@ NSInteger defaultPaletteColor3 = 0x000000;
     // Each audio frame = 2 16-bit channel frames (32-bits total per audio frame).
     // Additionally, Gambatte may return up to 2064 audio samples more than requested, so we need to add 2064 to the requested audioBuffer size.
     gambatte::uint_least32_t audioBuffer[samplesCount + 2064];
+    gambatte::uint_least32_t bgmBuffer[samplesCount + 2064];
     size_t samples = samplesCount;
     
-    while (self.gambatte->runFor((gambatte::uint_least32_t *)self.videoRenderer.videoBuffer, 160, audioBuffer, samples) == -1)
+    while (self.gambatte->runForWithBGM((gambatte::uint_least32_t *)self.videoRenderer.videoBuffer, 160, audioBuffer, bgmBuffer, samples) == -1)
     {
         [self.audioRenderer.audioBuffer writeBuffer:(uint8_t *)audioBuffer size:samples * 4];
+        [self.audioRenderer.bgmAudioBuffer writeBuffer:(uint8_t *)bgmBuffer size:samples * 4];
         
         samples = samplesCount;
     }
     
     [self.audioRenderer.audioBuffer writeBuffer:(uint8_t *)audioBuffer size:samples * 4];
+    [self.audioRenderer.bgmAudioBuffer writeBuffer:(uint8_t *)bgmBuffer size:samples * 4];
     
     if (processVideo)
     {
