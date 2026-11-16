@@ -19,6 +19,8 @@
 #import <DeltaCore/DeltaCore.h>
 #import <DeltaCore/DeltaCore-Swift.h>
 
+#include <chrono>
+
 // HACKY. Need to access private members to ensure save data loads properly.
 // This redefines the private members as public so we can use them.
 #define private public
@@ -38,6 +40,8 @@
 
 // Undefine private.
 #undef private
+
+static std::chrono::steady_clock::time_point nextBGMFrameTime = std::chrono::steady_clock::now();
 
 NSInteger defaultPaletteColor0 = 0xFFFFFF;
 NSInteger defaultPaletteColor1 = 0xAAAAAA;
@@ -98,6 +102,7 @@ NSInteger defaultPaletteColor3 = 0x000000;
 - (void)startWithGameURL:(NSURL *)gameURL
 {
     self.gameURL = gameURL;
+    nextBGMFrameTime = std::chrono::steady_clock::now();
     
     if (self.backgroundPalette)
     {
@@ -167,6 +172,17 @@ NSInteger defaultPaletteColor3 = 0x000000;
 
 - (void)runFrameAndProcessVideo:(BOOL)processVideo
 {
+    gambatte::CPU *cpu = (gambatte::CPU *)self.gambatte->p_;
+    bool const isAmbrosiaAudio = cpu->isAmbrosiaAudioRom();
+    auto const now = std::chrono::steady_clock::now();
+    auto const bgmFrameInterval = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(1.0 / 60.0));
+    bool const bgmFrameDue = !isAmbrosiaAudio || now >= nextBGMFrameTime;
+    if (isAmbrosiaAudio && bgmFrameDue)
+    {
+        nextBGMFrameTime = now + bgmFrameInterval;
+    }
+    cpu->setBgmFrameDue(bgmFrameDue);
+
     size_t samplesCount = 35112;
     
     // Each audio frame = 2 16-bit channel frames (32-bits total per audio frame).
@@ -178,7 +194,7 @@ NSInteger defaultPaletteColor3 = 0x000000;
     while (self.gambatte->runForWithBGM((gambatte::uint_least32_t *)self.videoRenderer.videoBuffer, 160, audioBuffer, bgmBuffer, samples) == -1)
     {
         [self.audioRenderer.audioBuffer writeBuffer:(uint8_t *)audioBuffer size:samples * 4];
-        [self.audioRenderer.bgmAudioBuffer writeBuffer:(uint8_t *)bgmBuffer size:samples * 4];
+        if (bgmFrameDue) [self.audioRenderer.bgmAudioBuffer writeBuffer:(uint8_t *)bgmBuffer size:samples * 4];
         
         samples = samplesCount;
     }
