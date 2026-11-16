@@ -200,7 +200,7 @@ NSInteger defaultPaletteColor3 = 0x000000;
     }
     
     [self.audioRenderer.audioBuffer writeBuffer:(uint8_t *)audioBuffer size:samples * 4];
-    [self.audioRenderer.bgmAudioBuffer writeBuffer:(uint8_t *)bgmBuffer size:samples * 4];
+    if (bgmFrameDue) [self.audioRenderer.bgmAudioBuffer writeBuffer:(uint8_t *)bgmBuffer size:samples * 4];
     
     if (processVideo)
     {
