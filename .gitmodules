@@ -1,3 +1,4 @@
 [submodule "gambatte"]
 	path = gambatte
 	url = https://github.com/ajun22333-cmyk/gambatte.git
+	branch = feature/gbc-bgm-1x
